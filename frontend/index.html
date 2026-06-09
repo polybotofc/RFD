@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RFD - Roblox Freedom Distribution</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            rfd: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <!-- Login/Register Modal -->
+  <div id="authModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+    <div class="bg-gray-800 rounded-lg p-8 w-full max-w-md mx-4 shadow-2xl border border-gray-700">
+      <div class="text-center mb-6">
+        <h1 class="text-3xl font-bold text-rfd-400">RFD</h1>
+        <p class="text-gray-400 text-sm">Roblox Freedom Distribution</p>
+      </div>
+      
+      <!-- Login Form -->
+      <div id="loginForm">
+        <h2 class="text-xl font-semibold mb-4">Login</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Username</label>
+            <input type="text" id="loginUsername" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" placeholder="Enter username">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Password</label>
+            <input type="password" id="loginPassword" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" placeholder="Enter password">
+          </div>
+          <button onclick="handleLogin()" class="w-full bg-rfd-600 hover:bg-rfd-700 text-white py-2 rounded font-semibold transition">Login</button>
+        </div>
+        <p class="text-center mt-4 text-gray-400">
+          Don't have an account? <button onclick="showRegister()" class="text-rfd-400 hover:underline">Register</button>
+        </p>
+      </div>
+      
+      <!-- Register Form -->
+      <div id="registerForm" class="hidden">
+        <h2 class="text-xl font-semibold mb-4">Register</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Username</label>
+            <input type="text" id="regUsername" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" placeholder="Enter username (3-32 chars)">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Password</label>
+            <input type="password" id="regPassword" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" placeholder="Enter password (min 6 chars)">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Confirm Password</label>
+            <input type="password" id="regConfirmPassword" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" placeholder="Confirm password">
+          </div>
+          <button onclick="handleRegister()" class="w-full bg-rfd-600 hover:bg-rfd-700 text-white py-2 rounded font-semibold transition">Register</button>
+        </div>
+        <p class="text-center mt-4 text-gray-400">
+          Already have an account? <button onclick="showLogin()" class="text-rfd-400 hover:underline">Login</button>
+        </p>
+      </div>
+      
+      <p id="authError" class="text-red-400 text-sm mt-4 text-center hidden"></p>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="hidden">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-gray-800 border-r border-gray-700 z-40 transform -translate-x-full lg:translate-x-0 transition-transform">
+      <div class="p-4 border-b border-gray-700">
+        <h1 class="text-2xl font-bold text-rfd-400">RFD</h1>
+        <p class="text-xs text-gray-400">Roblox Freedom Distribution</p>
+      </div>
+      
+      <nav class="p-4 space-y-2">
+        <button onclick="showPage('dashboard')" class="nav-btn w-full text-left px-4 py-2 rounded hover:bg-gray-700 transition flex items-center gap-3 active" data-page="dashboard">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+          Dashboard
+        </button>
+        <button onclick="showPage('servers')" class="nav-btn w-full text-left px-4 py-2 rounded hover:bg-gray-700 transition flex items-center gap-3" data-page="servers">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+          Servers
+        </button>
+        <button onclick="showPage('profile')" class="nav-btn w-full text-left px-4 py-2 rounded hover:bg-gray-700 transition flex items-center gap-3" data-page="profile">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+          Profile
+        </button>
+        <button onclick="showPage('config')" class="nav-btn w-full text-left px-4 py-2 rounded hover:bg-gray-700 transition flex items-center gap-3 admin-only hidden" data-page="config">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          Configuration
+        </button>
+        <button onclick="showPage('clients')" class="nav-btn w-full text-left px-4 py-2 rounded hover:bg-gray-700 transition flex items-center gap-3 admin-only hidden" data-page="clients">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+          Roblox Clients
+        </button>
+        <button onclick="showPage('admin')" class="nav-btn w-full text-left px-4 py-2 rounded hover:bg-gray-700 transition flex items-center gap-3 admin-only hidden" data-page="admin">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+          Admin Panel
+        </button>
+      </nav>
+      
+      <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 bg-rfd-600 rounded-full flex items-center justify-center font-bold" id="userAvatar">?</div>
+          <div>
+            <p class="font-medium" id="userName">User</p>
+            <p class="text-xs text-gray-400" id="userCode">U00000</p>
+          </div>
+        </div>
+        <button onclick="handleLogout()" class="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded text-sm transition">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen">
+      <!-- Header -->
+      <header class="bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between">
+        <button onclick="toggleSidebar()" class="lg:hidden p-2 hover:bg-gray-700 rounded">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+        <h2 class="text-xl font-semibold" id="pageTitle">Dashboard</h2>
+        <div class="flex items-center gap-4">
+          <span class="text-sm text-gray-400" id="currentTime"></span>
+        </div>
+      </header>
+
+      <!-- Dashboard Page -->
+      <div id="page-dashboard" class="page p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-400 text-sm">Total Users</p>
+                <p class="text-3xl font-bold" id="statUsers">0</p>
+              </div>
+              <div class="w-12 h-12 bg-blue-600/20 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+              </div>
+            </div>
+          </div>
+          <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-400 text-sm">Online Users</p>
+                <p class="text-3xl font-bold" id="statOnline">0</p>
+              </div>
+              <div class="w-12 h-12 bg-green-600/20 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z"></path></svg>
+              </div>
+            </div>
+          </div>
+          <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-400 text-sm">Running Servers</p>
+                <p class="text-3xl font-bold" id="statServers">0</p>
+              </div>
+              <div class="w-12 h-12 bg-purple-600/20 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+              </div>
+            </div>
+          </div>
+          <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-400 text-sm">Active Port</p>
+                <p class="text-3xl font-bold" id="statPort">-</p>
+              </div>
+              <div class="w-12 h-12 bg-rfd-600/20 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-rfd-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-gray-800 rounded-lg border border-gray-700">
+            <div class="p-4 border-b border-gray-700">
+              <h3 class="font-semibold">Quick Actions</h3>
+            </div>
+            <div class="p-4 grid grid-cols-2 gap-4">
+              <button onclick="showPage('servers')" class="bg-rfd-600 hover:bg-rfd-700 py-3 rounded-lg font-medium transition">Browse Servers</button>
+              <button onclick="showPage('profile')" class="bg-gray-700 hover:bg-gray-600 py-3 rounded-lg font-medium transition">My Profile</button>
+            </div>
+          </div>
+          
+          <div class="bg-gray-800 rounded-lg border border-gray-700">
+            <div class="p-4 border-b border-gray-700">
+              <h3 class="font-semibold">Join History</h3>
+            </div>
+            <div id="joinHistory" class="p-4 space-y-2 max-h-64 overflow-y-auto">
+              <p class="text-gray-400 text-sm">No recent joins</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Servers Page -->
+      <div id="page-servers" class="page p-6 hidden">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold">Available Servers</h3>
+          <button onclick="scanPorts()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded flex items-center gap-2 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            Scan Ports
+          </button>
+        </div>
+        
+        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-gray-700">
+              <tr>
+                <th class="px-4 py-3 text-left text-sm">Server Name</th>
+                <th class="px-4 py-3 text-left text-sm">Host</th>
+                <th class="px-4 py-3 text-left text-sm">Port</th>
+                <th class="px-4 py-3 text-left text-sm">Players</th>
+                <th class="px-4 py-3 text-left text-sm">Status</th>
+                <th class="px-4 py-3 text-left text-sm">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="serversTable" class="divide-y divide-gray-700">
+              <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">Loading servers...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Profile Page -->
+      <div id="page-profile" class="page p-6 hidden">
+        <div class="max-w-2xl mx-auto">
+          <div class="bg-gray-800 rounded-lg border border-gray-700 p-6 mb-6">
+            <div class="flex items-center gap-4 mb-6">
+              <div class="w-20 h-20 bg-rfd-600 rounded-full flex items-center justify-center text-3xl font-bold" id="profileAvatar">?</div>
+              <div>
+                <h3 class="text-2xl font-bold" id="profileName">User</h3>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-gray-400 text-sm">User Code:</span>
+                  <code class="bg-gray-700 px-2 py-1 rounded text-rfd-400 font-mono" id="profileUserCode">U00000</code>
+                  <button onclick="copyUserCode()" class="text-gray-400 hover:text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm text-gray-400 mb-1">Username</label>
+                <input type="text" id="editUsername" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500">
+              </div>
+              <button onclick="updateProfile()" class="bg-rfd-600 hover:bg-rfd-700 px-6 py-2 rounded font-medium transition">Update Profile</button>
+            </div>
+          </div>
+          
+          <div class="bg-gray-800 rounded-lg border border-gray-700 p-6">
+            <h3 class="font-semibold mb-4">Change Password</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm text-gray-400 mb-1">Current Password</label>
+                <input type="password" id="currentPassword" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500">
+              </div>
+              <div>
+                <label class="block text-sm text-gray-400 mb-1">New Password</label>
+                <input type="password" id="newPassword" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500">
+              </div>
+              <div>
+                <label class="block text-sm text-gray-400 mb-1">Confirm New Password</label>
+                <input type="password" id="confirmNewPassword" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500">
+              </div>
+              <button onclick="changePassword()" class="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded font-medium transition">Change Password</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Configuration Page (Admin) -->
+      <div id="page-config" class="page p-6 hidden">
+        <div class="max-w-3xl mx-auto">
+          <h3 class="text-lg font-semibold mb-4">Game Configuration</h3>
+          
+          <div class="bg-gray-800 rounded-lg border border-gray-700 p-6 mb-6">
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm text-gray-400 mb-1">Server Name</label>
+                  <input type="text" id="cfgServerName" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500">
+                </div>
+                <div>
+                  <label class="block text-sm text-gray-400 mb-1">Port</label>
+                  <input type="number" id="cfgPort" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500">
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm text-gray-400 mb-1">Max Players</label>
+                  <input type="number" id="cfgMaxPlayers" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500">
+                </div>
+                <div>
+                  <label class="block text-sm text-gray-400 mb-1">RFD Path</label>
+                  <input type="text" id="cfgRfdPath" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" placeholder="C:\RFD\RFD.exe">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-400 mb-1">Place File</label>
+                <input type="text" id="cfgPlaceFile" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" placeholder="path/to/place.rbxl">
+              </div>
+              <button onclick="saveConfig()" class="bg-rfd-600 hover:bg-rfd-700 px-6 py-2 rounded font-medium transition">Save Configuration</button>
+            </div>
+          </div>
+          
+          <div class="bg-gray-800 rounded-lg border border-gray-700 p-6">
+            <h3 class="font-semibold mb-4">GameConfig.toml Generator</h3>
+            <button onclick="detectRFD()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded mb-4 transition">Auto Detect RFD Installation</button>
+            <div id="detectedConfig" class="text-sm text-gray-400 mb-4 hidden"></div>
+            <button onclick="generateConfig()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded transition">Generate & Download GameConfig.toml</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Roblox Clients Page (Admin) -->
+      <div id="page-clients" class="page p-6 hidden">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold">Roblox Client Profiles</h3>
+          <button onclick="showAddClientModal()" class="bg-rfd-600 hover:bg-rfd-700 px-4 py-2 rounded transition">Add Client</button>
+        </div>
+        
+        <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-gray-700">
+              <tr>
+                <th class="px-4 py-3 text-left text-sm">Name</th>
+                <th class="px-4 py-3 text-left text-sm">Version</th>
+                <th class="px-4 py-3 text-left text-sm">Arguments</th>
+                <th class="px-4 py-3 text-left text-sm">Default</th>
+                <th class="px-4 py-3 text-left text-sm">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="clientsTable" class="divide-y divide-gray-700">
+              <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Loading clients...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Admin Panel Page -->
+      <div id="page-admin" class="page p-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-gray-800 rounded-lg border border-gray-700">
+            <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+              <h3 class="font-semibold">Server Management</h3>
+            </div>
+            <div class="p-4 space-y-4">
+              <div>
+                <label class="block text-sm text-gray-400 mb-1">Server Name</label>
+                <input type="text" id="newServerName" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500">
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm text-gray-400 mb-1">Host</label>
+                  <input type="text" id="newServerHost" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" value="127.0.0.1">
+                </div>
+                <div>
+                  <label class="block text-sm text-gray-400 mb-1">Port</label>
+                  <input type="number" id="newServerPort" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" value="53640">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-400 mb-1">Max Players</label>
+                <input type="number" id="newServerMaxPlayers" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" value="100">
+              </div>
+              <button onclick="createServer()" class="w-full bg-rfd-600 hover:bg-rfd-700 py-2 rounded font-medium transition">Create Server</button>
+            </div>
+          </div>
+          
+          <div class="bg-gray-800 rounded-lg border border-gray-700">
+            <div class="p-4 border-b border-gray-700">
+              <h3 class="font-semibold">Console Output</h3>
+            </div>
+            <div id="consoleOutput" class="p-4 h-64 overflow-y-auto bg-gray-900 font-mono text-sm">
+              <p class="text-gray-500">[System] Console ready...</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 bg-gray-800 rounded-lg border border-gray-700">
+          <div class="p-4 border-b border-gray-700">
+            <h3 class="font-semibold">Audit Logs</h3>
+          </div>
+          <div id="auditLogs" class="p-4 max-h-64 overflow-y-auto space-y-1 text-sm font-mono">
+            <p class="text-gray-500">Loading logs...</p>
+          </div>
+        </div>
+        
+        <div class="mt-6 bg-gray-800 rounded-lg border border-gray-700 p-6">
+          <h3 class="font-semibold mb-4">User Management</h3>
+          <div id="userManagement" class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-700">
+                <tr>
+                  <th class="px-4 py-2 text-left text-sm">ID</th>
+                  <th class="px-4 py-2 text-left text-sm">Username</th>
+                  <th class="px-4 py-2 text-left text-sm">User Code</th>
+                  <th class="px-4 py-2 text-left text-sm">Role</th>
+                  <th class="px-4 py-2 text-left text-sm">Status</th>
+                </tr>
+              </thead>
+              <tbody id="usersTable" class="divide-y divide-gray-700">
+                <tr><td colspan="5" class="px-4 py-4 text-center text-gray-400">Loading users...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div class="mt-6 bg-gray-800 rounded-lg border border-gray-700 p-6">
+          <h3 class="font-semibold mb-4">Upload Place File</h3>
+          <div class="flex items-center gap-4">
+            <input type="file" id="placeFile" accept=".rbxl,.rbxlx" class="hidden">
+            <button onclick="document.getElementById('placeFile').click()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded transition">Select .rbxl File</button>
+            <span id="selectedFileName" class="text-gray-400 text-sm">No file selected</span>
+            <button onclick="uploadPlaceFile()" class="bg-rfd-600 hover:bg-rfd-700 px-4 py-2 rounded transition ml-auto">Upload</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-xl transform translate-y-full opacity-0 transition-all z-50">
+    <p id="toastMessage" class="text-sm"></p>
+  </div>
+
+  <!-- Add Client Modal -->
+  <div id="clientModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
+    <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 border border-gray-700">
+      <h3 class="text-lg font-semibold mb-4">Add Roblox Client</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">Client Name</label>
+          <input type="text" id="clientName" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" placeholder="Roblox 2021">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">Client Version</label>
+          <input type="text" id="clientVersion" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" placeholder="0.485.0.452074">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">Client Path</label>
+          <input type="text" id="clientPath" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" placeholder="C:\Roblox\Versions\...">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">Launch Arguments</label>
+          <input type="text" id="clientArgs" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-rfd-500" placeholder="--gc 1">
+        </div>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" id="clientDefault" class="rounded bg-gray-700 border-gray-600">
+          <span class="text-sm">Set as default client</span>
+        </label>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="addClient()" class="flex-1 bg-rfd-600 hover:bg-rfd-700 py-2 rounded font-medium transition">Add Client</button>
+        <button onclick="hideClientModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded font-medium transition">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

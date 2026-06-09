@@ -1,335 +1,299 @@
-const { spawn } = require('child_process');
-const path = require('path');
+const { spawn, exec } = require('child_process');
+const net = require('net');
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
+const path = require('path');
 
 class ServerManager {
   constructor(db, io) {
     this.db = db;
     this.io = io;
-    this.processes = new Map(); // serverId -> { process, startTime }
-    this.portsInUse = new Set();
-    
-    // RFD executable path
-    this.rfdPath = process.env.RFD_PATH || '/app/RFD.exe';
-    
-    // Initialize ports from existing servers
-    this.initializePorts();
+    this.processes = new Map();
+    this.scanPorts = [2005, 53640, 53641, 53642];
   }
 
-  initializePorts() {
-    const servers = this.db.getAllServers();
-    servers.forEach(server => {
-      if (server.status === 'running') {
-        this.portsInUse.add(server.port);
-      }
+  // Scan for available ports
+  async scanPorts(host = '127.0.0.1', ports = this.scanPorts) {
+    const results = [];
+    
+    for (const port of ports) {
+      const isOpen = await this.checkPort(host, port);
+      results.push({ port, status: isOpen ? 'open' : 'closed' });
+    }
+    
+    return results;
+  }
+
+  checkPort(host, port) {
+    return new Promise((resolve) => {
+      const socket = new net.Socket();
+      socket.setTimeout(1000);
+      
+      socket.on('connect', () => {
+        socket.destroy();
+        resolve(true);
+      });
+      
+      socket.on('timeout', () => {
+        socket.destroy();
+        resolve(false);
+      });
+      
+      socket.on('error', () => {
+        socket.destroy();
+        resolve(false);
+      });
+      
+      socket.connect(port, host);
     });
   }
 
-  async startServer(serverId, gameId) {
-    const game = this.db.getGameById(gameId);
-    if (!game || !game.rbxl_path) {
-      throw new Error('Game not found or missing RBXL file');
-    }
-
+  // Start RFD server
+  async startServer(serverId, options = {}) {
     const server = this.db.getServerById(serverId);
     if (!server) {
       throw new Error('Server not found');
     }
 
     if (this.processes.has(serverId)) {
-      return { success: false, error: 'Server already running' };
+      throw new Error('Server already running');
     }
 
-    // Check if RFD exists
-    if (!fs.existsSync(this.rfdPath)) {
-      console.log('RFD.exe not found at:', this.rfdPath);
-      // For development, simulate server start
-      return this.simulateServerStart(serverId, game);
+    const rfdPath = options.rfdPath || this.db.getConfig('rfdPath') || 'RFD.exe';
+    const placeFile = options.placeFile || server.placeFile || this.db.getConfig('placeFile');
+    const port = options.port || server.port;
+    
+    const args = ['server', '-p', port.toString()];
+    if (placeFile) {
+      args.push('-i', placeFile);
     }
-
-    const port = server.port;
-    const args = [
-      'server',
-      '--place', game.rbxl_path,
-      '-p', port.toString()
-    ];
-
-    console.log(`Starting RFD server: ${this.rfdPath} ${args.join(' ')}`);
 
     try {
-      const process = spawn(this.rfdPath, args, {
-        stdio: ['pipe', 'pipe', 'pipe'],
-        detached: false
+      const process = spawn(rfdPath, args, {
+        cwd: path.dirname(rfdPath) || process.cwd(),
+        stdio: ['pipe', 'pipe', 'pipe']
       });
 
-      this.processes.set(serverId, {
-        process,
-        startTime: Date.now(),
-        gameTitle: game.title
-      });
-
-      this.portsInUse.add(port);
-
+      this.processes.set(serverId, process);
+      
       process.stdout.on('data', (data) => {
-        const log = data.toString();
-        this.emitLog(serverId, 'info', log);
-        this.io.to('admin-logs').emit('server-log', { serverId, log, type: 'stdout' });
+        this.emitLog(serverId, 'info', data.toString());
       });
 
       process.stderr.on('data', (data) => {
-        const log = data.toString();
-        this.emitLog(serverId, 'error', log);
-        this.io.to('admin-logs').emit('server-log', { serverId, log, type: 'stderr' });
-      });
-
-      process.on('error', (error) => {
-        console.error(`Server ${serverId} error:`, error);
-        this.emitLog(serverId, 'error', `Process error: ${error.message}`);
-        this.cleanupServer(serverId);
+        this.emitLog(serverId, 'error', data.toString());
       });
 
       process.on('exit', (code) => {
-        console.log(`Server ${serverId} exited with code ${code}`);
-        this.emitLog(serverId, 'info', `Server exited with code ${code}`);
-        this.cleanupServer(serverId);
+        this.processes.delete(serverId);
+        this.db.updateServerStatus(serverId, 'offline');
+        this.emitLog(serverId, 'info', `Server stopped with code ${code}`);
+        this.io.to('admin-logs').emit('server-status', { serverId, status: 'offline' });
       });
 
-      // Update database
-      this.db.updateServer(serverId, {
-        status: 'running',
-        pid: process.pid,
-        started_at: new Date().toISOString()
-      });
-
-      this.io.emit('server-started', { serverId, port });
+      // Wait a bit and check if server is actually running
+      await this.delay(2000);
+      const isRunning = await this.checkPort(server.host, port);
       
-      return { success: true, pid: process.pid, port };
+      if (isRunning) {
+        this.db.updateServerStatus(serverId, 'running', process.pid);
+        this.emitLog(serverId, 'info', 'Server started successfully');
+        this.io.to('admin-logs').emit('server-status', { serverId, status: 'running' });
+        return { success: true, pid: process.pid };
+      } else {
+        this.processes.delete(serverId);
+        this.db.updateServerStatus(serverId, 'offline');
+        return { success: false, error: 'Server failed to start' };
+      }
     } catch (error) {
-      console.error('Failed to start server:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  simulateServerStart(serverId, game) {
-    // Simulate server for development without RFD
-    const port = this.db.getServerById(serverId)?.port || 2000;
-    
-    this.portsInUse.add(port);
-    
-    const startTime = Date.now();
-    const fakeProcess = {
-      pid: Math.floor(Math.random() * 10000) + 5000,
-      kill: () => {}
-    };
-
-    this.processes.set(serverId, {
-      process: fakeProcess,
-      startTime,
-      gameTitle: game.title,
-      simulated: true
-    });
-
-    // Simulate periodic logs
-    const logInterval = setInterval(() => {
-      if (!this.processes.has(serverId)) {
-        clearInterval(logInterval);
-        return;
-      }
-      this.emitLog(serverId, 'info', `[Simulated] Server running on port ${port}`);
-    }, 30000);
-
-    this.db.updateServer(serverId, {
-      status: 'running',
-      pid: fakeProcess.pid,
-      started_at: new Date().toISOString()
-    });
-
-    this.io.emit('server-started', { serverId, port });
-    
-    return { success: true, simulated: true, port };
-  }
-
-  async stopServer(serverId) {
-    const serverData = this.processes.get(serverId);
-    
-    if (!serverData) {
-      // Try to cleanup database entry
-      const server = this.db.getServerById(serverId);
-      if (server) {
-        this.db.updateServer(serverId, {
-          status: 'stopped',
-          pid: null,
-          uptime: 0
-        });
-      }
-      return { success: true, message: 'Server was not running' };
-    }
-
-    try {
-      if (serverData.process && !serverData.simulated) {
-        serverData.process.kill('SIGTERM');
-        
-        // Give it 5 seconds to terminate gracefully
-        setTimeout(() => {
-          if (serverData.process && !serverData.process.killed) {
-            serverData.process.kill('SIGKILL');
-          }
-        }, 5000);
-      }
-
-      this.cleanupServer(serverId);
-      
-      this.db.updateServer(serverId, {
-        status: 'stopped',
-        pid: null,
-        uptime: 0
-      });
-
-      this.io.emit('server-stopped', { serverId });
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to stop server:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  async restartServer(serverId) {
-    const server = this.db.getServerById(serverId);
-    if (!server) {
-      return { success: false, error: 'Server not found' };
-    }
-
-    await this.stopServer(serverId);
-    
-    // Small delay before restart
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    return this.startServer(serverId, server.game_id);
-  }
-
-  cleanupServer(serverId) {
-    const serverData = this.processes.get(serverId);
-    if (serverData) {
-      this.portsInUse.delete(serverData.port);
       this.processes.delete(serverId);
+      throw error;
     }
   }
 
-  emitLog(serverId, level, message) {
-    const logEntry = {
-      serverId,
-      level,
-      message,
-      timestamp: new Date().toISOString()
-    };
-
-    this.db.addLog(serverId, `[${level.toUpperCase()}] ${message}`);
+  // Stop server
+  stopServer(serverId) {
+    const process = this.processes.get(serverId);
     
-    // Emit to server-specific room
-    this.io.to(`server-logs-${serverId}`).emit('server-log', logEntry);
-  }
-
-  updatePlayerCount(serverId, action, player) {
-    const server = this.db.getServerById(serverId);
-    if (!server) return;
-
-    let players = [];
-    try {
-      players = JSON.parse(server.players || '[]');
-    } catch (e) {
-      players = [];
-    }
-
-    if (action === 'join') {
-      if (!players.find(p => p.id === player.id)) {
-        players.push(player);
+    if (!process) {
+      // Try to find process by PID from database
+      const server = this.db.getServerById(serverId);
+      if (server && server.pid) {
+        try {
+          process.kill('SIGTERM');
+        } catch (e) {
+          // Process may already be dead
+        }
       }
-    } else if (action === 'leave') {
-      players = players.filter(p => p.id !== player.id);
+      this.db.updateServerStatus(serverId, 'offline');
+      return { success: true };
     }
 
-    this.db.updateServer(serverId, {
-      players: JSON.stringify(players)
-    });
-
-    this.io.emit('player-update', {
-      serverId,
-      players,
-      count: players.length
-    });
+    process.kill('SIGTERM');
+    this.processes.delete(serverId);
+    this.db.updateServerStatus(serverId, 'offline');
+    this.emitLog(serverId, 'info', 'Server stopped');
+    
+    return { success: true };
   }
 
+  // Restart server
+  async restartServer(serverId, options = {}) {
+    this.stopServer(serverId);
+    await this.delay(1000);
+    return this.startServer(serverId, options);
+  }
+
+  // Get server status
   getServerStatus(serverId) {
     const server = this.db.getServerById(serverId);
     if (!server) return null;
 
-    const serverData = this.processes.get(serverId);
-    let uptime = 0;
+    const process = this.processes.get(serverId);
+    const isRunning = process && !process.killed;
     
-    if (serverData && server.status === 'running') {
-      uptime = (Date.now() - serverData.startTime) / 1000;
-    }
-
-    let players = [];
-    try {
-      players = JSON.parse(server.players || '[]');
-    } catch (e) {
-      players = [];
-    }
-
     return {
       ...server,
-      uptime,
-      players,
-      playerCount: players.length
+      processRunning: isRunning,
+      pid: process?.pid || server.pid
     };
   }
 
-  getAvailablePort(startPort = 2000) {
-    let port = startPort;
-    while (this.portsInUse.has(port) && port < 65535) {
-      port++;
-    }
-    return port;
-  }
-
+  // Stop all servers
   stopAllServers() {
-    console.log('Stopping all servers...');
-    for (const [serverId, serverData] of this.processes) {
-      try {
-        if (serverData.process && !serverData.simulated) {
-          serverData.process.kill('SIGTERM');
-        }
-      } catch (e) {
-        console.error(`Failed to stop server ${serverId}:`, e);
-      }
+    for (const [serverId, process] of this.processes) {
+      process.kill('SIGTERM');
     }
     this.processes.clear();
-    this.portsInUse.clear();
   }
 
+  // Restore servers from database
   restoreServers() {
-    // Check for any servers that were running before shutdown
-    const servers = this.db.getAllServers();
-    servers.forEach(server => {
+    const servers = this.db.getServers();
+    for (const server of servers) {
       if (server.status === 'running' && server.pid) {
-        // Try to verify if process is still running
         try {
           process.kill(server.pid, 0);
-          console.log(`Restored server ${server.id} with PID ${server.pid}`);
+          this.processes.set(server.id, { pid: server.pid, killed: false });
         } catch (e) {
-          // Process not running, update status
-          this.db.updateServer(server.id, { status: 'stopped', pid: null });
+          this.db.updateServerStatus(server.id, 'offline');
         }
       }
-    });
+    }
   }
 
-  getAllServerStatuses() {
-    const servers = this.db.getAllServers();
-    return servers.map(server => this.getServerStatus(server.id)).filter(Boolean);
+  // Auto detect RFD installation
+  async detectRFDPath() {
+    const possiblePaths = [
+      'C:\\RFD\\RFD.exe',
+      'C:\\RFD\\FreedomDistribution.exe',
+      'C:\\Program Files\\RFD\\RFD.exe',
+      'C:\\Program Files (x86)\\RFD\\RFD.exe',
+      path.join(process.env.LOCALAPPDATA || '', 'RFD', 'RFD.exe'),
+      'RFD.exe',
+      'FreedomDistribution.exe'
+    ];
+
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        return p;
+      }
+    }
+
+    return null;
+  }
+
+  // Auto detect GameConfig.toml
+  async detectGameConfig(rfdPath) {
+    const configDir = path.dirname(rfdPath);
+    const possiblePaths = [
+      path.join(configDir, 'GameConfig.toml'),
+      path.join(configDir, 'config', 'GameConfig.toml'),
+      path.join(process.env.LOCALAPPDATA || '', 'RFD', 'GameConfig.toml')
+    ];
+
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        return p;
+      }
+    }
+
+    return null;
+  }
+
+  // Parse GameConfig.toml
+  parseGameConfig(configPath) {
+    try {
+      const content = fs.readFileSync(configPath, 'utf-8');
+      const config = {};
+      
+      content.split('\n').forEach(line => {
+        const match = line.match(/^(\w+)\s*=\s*"?([^"]*)"?/);
+        if (match) {
+          config[match[1]] = match[2];
+        }
+      });
+      
+      return config;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // Generate GameConfig.toml
+  generateGameConfig(config) {
+    let content = '# RFD Game Configuration\n\n';
+    content += `[Game]\n`;
+    content += `Name = "${config.name || 'RFD Server'}"\n`;
+    content += `Port = ${config.port || 53640}\n`;
+    content += `MaxPlayers = ${config.maxPlayers || 100}\n`;
+    content += `PlaceId = ${config.placeId || 0}\n\n`;
+    content += `[Roblox]\n`;
+    content += `Version = "${config.version || '0.485.0.452074'}"\n`;
+    content += `PlaceFile = "${config.placeFile || ''}"\n`;
+    
+    return content;
+  }
+
+  // Health check
+  async healthCheck(serverId) {
+    const server = this.db.getServerById(serverId);
+    if (!server) return { healthy: false, error: 'Server not found' };
+
+    const isPortOpen = await this.checkPort(server.host, server.port);
+    
+    return {
+      healthy: isPortOpen && server.status === 'running',
+      portOpen: isPortOpen,
+      dbStatus: server.status,
+      pid: server.pid
+    };
+  }
+
+  // Update player count
+  updatePlayerCount(serverId, action, player) {
+    const server = this.db.getServerById(serverId);
+    if (!server) return;
+
+    let count = server.currentPlayers;
+    if (action === 'join') count++;
+    else if (action === 'leave') count = Math.max(0, count - 1);
+
+    this.db.updateServerPlayerCount(serverId, count);
+    this.io.emit('player-count', { serverId, count });
+  }
+
+  // Helper methods
+  delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  emitLog(serverId, type, message) {
+    const log = { serverId, type, message, timestamp: new Date().toISOString() };
+    this.io.to(`server-logs-${serverId}`).emit('server-log', log);
+    this.io.to('admin-logs').emit('server-log', log);
+    
+    // Also save to database
+    this.db.createAuditLog(null, 'server-log', JSON.stringify(log), '');
   }
 }
 

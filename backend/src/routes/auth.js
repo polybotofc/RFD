@@ -1,181 +1,163 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const { authenticate, rateLimit, validateInput, generateToken } = require('../middleware/auth');
+
 const router = express.Router();
 
-const authMiddleware = require('../middleware/auth');
-
-// POST /api/auth/register - Register new user
-router.post('/register', async (req, res) => {
+// Register
+router.post('/register', validateInput, async (req, res) => {
   try {
     const { username, password } = req.body;
+    const db = req.app.get('db');
 
-    // Validate input
-    if (!username || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Username and password are required' 
-      });
+    // Check if username exists
+    if (db.getUserByUsername(username)) {
+      return res.status(400).json({ success: false, error: 'Username already exists' });
     }
 
-    if (username.length < 3 || username.length > 20) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Username must be between 3 and 20 characters' 
-      });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Password must be at least 6 characters' 
-      });
-    }
-
-    // Check if username already exists
-    const existingUser = req.app.get('db').getUserByUsername(username);
-    if (existingUser) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Username already taken' 
-      });
-    }
+    // Generate unique user code
+    const userCount = db.db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+    const userCode = `U${String(userCount + 1).padStart(5, '0')}`;
 
     // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const result = req.app.get('db').createUser(username, passwordHash);
+    const userId = db.createUser(username, hashedPassword, userCode);
     
-    if (!result.success) {
-      return res.status(500).json({ 
-        success: false, 
-        error: result.error 
-      });
-    }
+    // Log the registration
+    db.createAuditLog(userId, 'register', `User ${username} registered`, req.ip);
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: result.id, username },
-      process.env.JWT_SECRET || 'default-secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
-
-    res.status(201).json({
-      success: true,
-      user: {
-        id: result.id,
-        username,
-        is_admin: false
-      },
-      token
+    res.status(201).json({ 
+      success: true, 
+      message: 'Registration successful',
+      userCode 
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
+    res.status(500).json({ success: false, error: 'Registration failed' });
   }
 });
 
-// POST /api/auth/login - Login user
-router.post('/login', async (req, res) => {
+// Login
+router.post('/login', rateLimit, async (req, res) => {
   try {
     const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Username and password are required' 
-      });
-    }
+    const db = req.app.get('db');
 
     // Find user
-    const user = req.app.get('db').getUserByUsername(username);
+    const user = db.getUserByUsername(username);
     if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Invalid username or password' 
-      });
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
-    // Verify password
-    const validPassword = await bcrypt.compare(password, user.password_hash);
-    if (!validPassword) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Invalid username or password' 
-      });
+    // Check password
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      db.createAuditLog(user.id, 'login-failed', 'Invalid password', req.ip);
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id, username: user.username },
-      process.env.JWT_SECRET || 'default-secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
+    // Update last login and online status
+    db.updateLastLogin(user.id);
+    db.setUserOnline(user.id, true);
 
-    res.json({
-      success: true,
+    // Generate token
+    const token = generateToken(user);
+
+    // Log successful login
+    db.createAuditLog(user.id, 'login', 'User logged in', req.ip);
+
+    res.json({ 
+      success: true, 
+      token,
       user: {
         id: user.id,
         username: user.username,
-        is_admin: !!user.is_admin
-      },
-      token
+        userCode: user.userCode,
+        role: user.role
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
+    res.status(500).json({ success: false, error: 'Login failed' });
   }
 });
 
-// POST /api/auth/logout - Logout user
-router.post('/logout', authMiddleware, (req, res) => {
-  // In a stateless JWT system, logout is handled client-side
-  // You could implement token blacklisting here if needed
-  res.json({
-    success: true,
-    message: 'Logged out successfully'
-  });
+// Logout
+router.post('/logout', authenticate, (req, res) => {
+  const db = req.app.get('db');
+  db.setUserOnline(req.user.id, false);
+  db.createAuditLog(req.user.id, 'logout', 'User logged out', req.ip);
+  res.json({ success: true, message: 'Logged out successfully' });
 });
 
-// GET /api/auth/me - Get current user
-router.get('/me', authMiddleware, (req, res) => {
-  const user = req.app.get('db').getUserById(req.user.userId);
+// Get profile
+router.get('/profile', authenticate, (req, res) => {
+  const db = req.app.get('db');
+  const user = db.getUserById(req.user.id);
   
   if (!user) {
-    return res.status(404).json({ 
-      success: false, 
-      error: 'User not found' 
-    });
+    return res.status(404).json({ success: false, error: 'User not found' });
   }
 
-  res.json({
-    success: true,
-    user
+  // Get join history
+  const joinHistory = db.getJoinHistory(req.user.id, 10);
+
+  res.json({ 
+    success: true, 
+    user: {
+      ...user,
+      joinHistory
+    }
   });
 });
 
-// GET /api/auth/users - Get all users (admin only)
-router.get('/users', authMiddleware, (req, res) => {
-  if (!req.user.isAdmin) {
-    return res.status(403).json({ 
-      success: false, 
-      error: 'Admin access required' 
-    });
+// Update profile
+router.put('/profile', authenticate, validateInput, (req, res) => {
+  const db = req.app.get('db');
+  const { username } = req.body;
+
+  if (username && username !== req.user.username) {
+    // Check if username is taken
+    if (db.getUserByUsername(username)) {
+      return res.status(400).json({ success: false, error: 'Username already taken' });
+    }
+    
+    db.updateUsername(req.user.id, username);
+    db.createAuditLog(req.user.id, 'profile-update', `Username changed to ${username}`, req.ip);
   }
 
-  const users = req.app.get('db').getAllUsers();
-  
-  res.json({
-    success: true,
-    users
-  });
+  const user = db.getUserById(req.user.id);
+  res.json({ success: true, user });
+});
+
+// Change password
+router.put('/password', authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const db = req.app.get('db');
+
+    const user = db.getUserByUsername(req.user.username);
+    
+    // Verify current password
+    const isValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isValid) {
+      return res.status(401).json({ success: false, error: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update password
+    db.db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, req.user.id);
+    db.createAuditLog(req.user.id, 'password-change', 'Password changed', req.ip);
+
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Password change error:', error);
+    res.status(500).json({ success: false, error: 'Failed to change password' });
+  }
 });
 
 module.exports = router;

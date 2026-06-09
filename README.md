@@ -1,291 +1,266 @@
-# RFD Platform - Roblox Freedom Distribution Web Platform
+# RFD - Roblox Freedom Distribution Platform
 
-A complete Roblox-style web platform integrated with RFD (Roblox Freedom Distribution) for private game server networks.
+Web launcher dan panel management untuk server RFD yang berjalan di Windows dengan fokus Roblox 2021 client compatibility.
 
-## 🎮 Features
+![RFD Platform](https://img.shields.io/badge/Platform-Windows-blue)
+![Roblox](https://img.shields.io/badge/Roblox-2021-green)
 
-- **User Authentication**: Register, login, JWT-based sessions with bcrypt password hashing
-- **Game Browser**: Browse, search, and filter all available games
-- **Server Management**: View servers, join games, manage server lifecycle
-- **Real-time Updates**: Live server status, player counts, and logs via Socket.IO
-- **Admin Dashboard**: Full control over users, games, and servers
-- **RFD Integration**: Automatic server discovery, process management, and log monitoring
-- **Custom Protocol**: `rfd://` protocol support for game launching
+## Fitur Utama
 
-## 🏗️ Tech Stack
+### 1. Authentication
+- Register/Login dengan bcrypt password hashing
+- User Code unik otomatis (contoh: U12345)
+- JWT session management
+- Rate limiting untuk login attempts
 
-### Backend
-- **Runtime**: Node.js 20+
-- **Framework**: Express.js
-- **Database**: SQLite (better-sqlite3)
-- **Real-time**: Socket.IO
-- **Authentication**: JWT + bcrypt
-- **File Upload**: Multer
+### 2. RFD Integration
+- Konfigurasi lokasi RFD.exe
+- Auto scan port server (2005, 53640, 53641, 53642)
+- Auto detect GameConfig.toml
+- Health check server
 
-### Frontend
-- **Framework**: Next.js 14 (React)
-- **Styling**: TailwindCSS
-- **State**: React Hooks + Context
-- **Real-time**: Socket.IO Client
-
-## 📁 Project Structure
-
+### 3. Join Game
+```bash
+RFD.exe player -h SERVER_IP -p SERVER_PORT -u USERCODE
 ```
-/workspace/project/RFD/
-├── backend/
-│   ├── src/
-│   │   ├── server.js          # Main server entry
-│   │   ├── routes/            # API route handlers
-│   │   │   ├── auth.js        # Authentication routes
-│   │   │   ├── games.js       # Game management routes
-│   │   │   ├── servers.js     # Server management routes
-│   │   │   └── api.js         # General API routes
-│   │   ├── services/          # Business logic
-│   │   │   ├── database.js    # SQLite database service
-│   │   │   ├── serverManager.js # RFD process manager
-│   │   │   └── logWatcher.js  # RFD log parser
-│   │   └── middleware/        # Express middleware
-│   │       └── auth.js        # JWT authentication
-│   └── uploads/               # Game and thumbnail storage
-├── frontend/
-│   ├── src/
-│   │   ├── app/               # Next.js App Router pages
-│   │   │   ├── page.tsx       # Homepage
-│   │   │   ├── discover/      # Game discovery
-│   │   │   ├── game/[id]/     # Individual game page
-│   │   │   ├── servers/       # Server browser
-│   │   │   ├── admin/         # Admin dashboard
-│   │   │   ├── login/         # Login page
-│   │   │   └── register/      # Registration page
-│   │   ├── components/        # React components
-│   │   ├── hooks/             # Custom React hooks
-│   │   ├── lib/               # Utilities and API client
-│   │   └── styles/            # Global styles
-│   └── public/               # Static assets
-├── docker-compose.yml         # Production Docker setup
-├── docker-compose.dev.yml     # Development Docker setup
-└── Dockerfile                 # Multi-stage build
+- Generate launch command otomatis
+- Copy to clipboard
+- Join history tracking
 
-## 🚀 Getting Started
+### 4. Server Browser
+- Display: Server Name, Host, Port, Players, Status
+- Auto refresh setiap 10 detik
+- Quick join untuk server yang running
+
+### 5. Admin Panel
+- Create/Start/Stop/Restart servers
+- Real-time console viewer
+- Upload .rbxl place files
+- User management
+- Audit logs
+- Configuration management
+
+### 6. Roblox 2021 Compatibility
+- Multiple client profiles
+- Custom client versions
+- Launch arguments support
+- Default client selection
+
+## Tech Stack
+
+- **Backend**: Node.js + Express
+- **Database**: SQLite (better-sqlite3)
+- **Frontend**: HTML + TailwindCSS + Vanilla JS
+- **Auth**: JWT + bcrypt
+- **Real-time**: Socket.IO
+
+## Installation
 
 ### Prerequisites
+- Node.js 18+
+- npm atau yarn
+- RFD.exe (untuk server management)
 
-- Node.js 20+
-- Docker & Docker Compose (for containerized deployment)
-- RFD.exe (for actual game server hosting)
+### Quick Start
 
-### Local Development
+1. **Clone/Download repository**
+```bash
+cd RFD
+```
 
-1. **Install dependencies**
-   ```bash
-   npm run install:all
-   ```
+2. **Setup Backend**
+```bash
+cd backend
+npm install
+cp ../.env.example ../.env
+npm run dev
+```
 
-2. **Configure environment**
-   ```bash
-   cp .env.example backend/.env
-   # Edit backend/.env with your settings
-   ```
+3. **Setup Frontend**
+Buka file `frontend/index.html` di browser, atau serve dengan static server:
 
-3. **Start development servers**
-   ```bash
-   npm run dev
-   ```
-   
-   This will start:
-   - Backend API at http://localhost:3001
-   - Frontend at http://localhost:3000
+```bash
+# Using Python
+cd frontend
+python -m http.server 3000
 
-### Docker Deployment
+# Using npx
+npx serve frontend
+```
 
-1. **Build and run**
-   ```bash
-   # Production
-   docker-compose up -d
-   
-   # Development
-   docker-compose -f docker-compose.dev.yml up -d
-   ```
+4. **Login**
+- Buka browser ke `http://localhost:3000`
+- Login dengan default admin:
+  - Username: `admin`
+  - Password: `admin123`
 
-2. **With RFD executable**
-   ```bash
-   RFD_EXECUTABLE_PATH=./RFD.exe docker-compose up -d
-   ```
+## Windows Deployment Guide
 
-## 🔐 Default Credentials
+### 1. Install Node.js
+Download dan install Node.js 18+ dari https://nodejs.org/
 
-On first startup, a default admin user is created:
-- **Username**: admin
-- **Password**: admin123
+### 2. Setup Project
+```batch
+cd C:\RFD
+npm install
+```
 
-⚠️ **Change these credentials in production!**
+### 3. Create Start Script
+Buat file `start.bat`:
+```batch
+@echo off
+cd /d %~dp0
+title RFD Platform
+echo Starting RFD Platform...
+npm run dev
+pause
+```
 
-## 🌐 API Reference
+### 4. Auto-start with Windows
+1. Tekan `Win + R`, ketik `shell:startup`
+2. Buat shortcut ke `start.bat`
+
+### 5. Firewall Setup
+```batch
+netsh advfirewall firewall add rule name="RFD Platform" dir=in action=allow protocol=tcp localport=3001
+```
+
+## Configuration
+
+### GameConfig.toml Generator
+Web menyediakan UI untuk generate `GameConfig.toml`:
+
+```toml
+# RFD Game Configuration
+
+[Game]
+Name = "My RFD Server"
+Port = 53640
+MaxPlayers = 100
+PlaceId = 0
+
+[Roblox]
+Version = "0.485.0.452074"
+PlaceFile = "path/to/place.rbxl"
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| PORT | 3001 | Server port |
+| JWT_SECRET | (random) | JWT signing secret |
+| FRONTEND_URL | http://localhost:3000 | CORS origin |
+
+## API Reference
 
 ### Authentication
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login user |
-| POST | `/api/auth/logout` | Logout user |
-| GET | `/api/auth/me` | Get current user |
-| GET | `/api/auth/users` | List all users (admin) |
-
-### Games
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/games` | List all games |
-| GET | `/api/games/:id` | Get game details |
-| POST | `/api/games` | Create game (admin) |
-| PUT | `/api/games/:id` | Update game (admin) |
-| DELETE | `/api/games/:id` | Delete game (admin) |
+```
+POST /api/auth/register - Register new user
+POST /api/auth/login    - Login
+POST /api/auth/logout   - Logout
+GET  /api/auth/profile  - Get profile
+PUT  /api/auth/profile  - Update profile
+```
 
 ### Servers
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/servers` | List all servers |
-| GET | `/api/servers/:id` | Get server details |
-| POST | `/api/servers` | Create server (admin) |
-| POST | `/api/servers/start/:id` | Start server (admin) |
-| POST | `/api/servers/stop/:id` | Stop server (admin) |
-| POST | `/api/servers/restart/:id` | Restart server (admin) |
-| DELETE | `/api/servers/:id` | Delete server (admin) |
-
-### Game Join
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/join/:serverId` | Get server connection info |
-
-### Stats
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/stats` | Get platform statistics |
-
-## 🎮 Game Launching
-
-The platform uses a custom protocol for launching games:
-
 ```
-rfd://join?host=<host>&port=<port>
+GET    /api/servers           - List all servers
+POST   /api/servers           - Create server (admin)
+GET    /api/servers/:id       - Get server details
+PUT    /api/servers/:id       - Update server (admin)
+DELETE /api/servers/:id       - Delete server (admin)
+POST   /api/servers/:id/start - Start server (admin)
+POST   /api/servers/:id/stop  - Stop server (admin)
+GET    /api/servers/scan/ports - Scan available ports
 ```
 
-When clicked, this will launch the RFD client to connect to the specified server.
-
-## 📊 Database Schema
-
-### users
-| Column | Type | Description |
-|--------|------|-------------|
-| id | INTEGER | Primary key |
-| username | TEXT | Unique username |
-| password_hash | TEXT | Bcrypt hashed password |
-| created_at | DATETIME | Account creation time |
-| is_admin | INTEGER | Admin flag (0/1) |
-
-### games
-| Column | Type | Description |
-|--------|------|-------------|
-| id | INTEGER | Primary key |
-| title | TEXT | Game title |
-| description | TEXT | Game description |
-| creator | TEXT | Creator username |
-| rbxl_path | TEXT | Path to .rbxl file |
-| thumbnail | TEXT | Thumbnail URL/path |
-| default_port | INTEGER | Default server port |
-| created_at | DATETIME | Creation time |
-
-### servers
-| Column | Type | Description |
-|--------|------|-------------|
-| id | INTEGER | Primary key |
-| game_id | INTEGER | Foreign key to games |
-| port | INTEGER | Server port |
-| pid | INTEGER | RFD process ID |
-| status | TEXT | running/stopped |
-| players | TEXT | JSON array of players |
-| max_players | INTEGER | Max player capacity |
-| uptime | REAL | Server uptime in seconds |
-| started_at | DATETIME | Server start time |
-
-## 🔧 RFD Integration
-
-### Starting a Server
-
-```bash
-RFD.exe server --place "<rbxl_path>" -p <port>
+### Game
+```
+POST /api/join    - Get join info & command
+GET  /api/stats  - Dashboard statistics
 ```
 
-### Server Manager Features
-
-- Process spawning and management
-- Automatic port allocation
-- Server state tracking
-- Real-time log streaming
-- Graceful shutdown handling
-
-### Log Watcher
-
-Automatically detects:
-- Server startup (extracts port, map info)
-- Player join/leave events
-- Server shutdown
-
-## 🛡️ Security
-
-- Passwords hashed with bcrypt (cost factor 10)
-- JWT tokens with configurable expiration
-- CORS configuration for API access
-- Input validation on all endpoints
-- SQL injection prevention via prepared statements
-
-## 📝 Development
-
-### Adding New Features
-
-1. Create route handler in `backend/src/routes/`
-2. Add service logic in `backend/src/services/`
-3. Create React component in `frontend/src/components/`
-4. Add page in `frontend/src/app/`
-5. Update API client in `frontend/src/lib/api.ts`
-
-### Testing
-
-```bash
-# Backend tests
-cd backend && npm test
-
-# Frontend tests
-cd frontend && npm test
-
-# E2E tests (requires running servers)
-npm run test:e2e
+### Admin
+```
+GET    /api/config          - Get all config
+POST   /api/config/bulk     - Update config
+GET    /api/clients          - List Roblox clients
+POST   /api/clients          - Add client (admin)
+POST   /api/upload/place     - Upload place file
+GET    /api/audit-logs       - Get audit logs
+GET    /api/users            - List all users
+GET    /api/detect-rfd       - Auto-detect RFD installation
+POST   /api/generate-config  - Generate GameConfig.toml
 ```
 
-## 🐛 Troubleshooting
+## Security Features
 
-### Server won't start
-- Check RFD.exe path in environment
-- Verify port is available
-- Check logs for errors
+- **Rate Limiting**: 5 login attempts per minute per IP
+- **JWT Auth**: 24-hour token expiration
+- **Password Hashing**: bcrypt with salt rounds
+- **Input Validation**: Username/password validation
+- **Audit Logging**: All actions logged
+- **CORS Protection**: Configurable origins
 
-### Database issues
-- Delete `backend/data/rfds.db` to reset
-- Check file permissions on data directory
+## Project Structure
 
-### Frontend can't connect to API
-- Verify backend is running on port 3001
-- Check CORS settings
-- Check environment variables
+```
+RFD/
+├── backend/
+│   ├── src/
+│   │   ├── routes/
+│   │   │   ├── auth.js      # Authentication routes
+│   │   │   ├── servers.js    # Server management routes
+│   │   │   └── api.js        # General API routes
+│   │   ├── middleware/
+│   │   │   └── auth.js       # Auth middleware
+│   │   ├── services/
+│   │   │   ├── database.js      # SQLite service
+│   │   │   └── serverManager.js # RFD process manager
+│   │   └── server.js         # Main entry point
+│   └── package.json
+├── frontend/
+│   ├── index.html         # Main HTML
+│   ├── css/
+│   │   └── styles.css     # Custom styles
+│   └── js/
+│       └── app.js         # Frontend logic
+├── database/              # SQLite database (auto-created)
+├── config/                # Config files
+├── uploads/               # Uploaded place files
+├── logs/                  # Server logs
+└── README.md
+```
 
-## 📄 License
+## Troubleshooting
 
-This project is provided as-is for private RFD network deployments.
+### "Failed to fetch" Error
+1. Pastikan backend server running di port 3001
+2. Cek CORS configuration
+3. Pastikan tidak ada firewall blocking
 
-## 🤝 Contributing
+### Server tidak start
+1. Pastikan RFD.exe path benar
+2. Cek port belum digunakan
+3. Lihat console logs untuk error details
 
-Contributions welcome! Please read the contributing guidelines before submitting PRs.
+### Database error
+1. Hapus file `database/rfd.db`
+2. Restart server - database akan dibuat ulang
+
+## Default Credentials
+
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | admin | admin123 |
+
+⚠️ **PENTING**: Ganti password admin setelah pertama login!
+
+## License
+
+MIT License - Bebas digunakan untuk project apapun.
+
+## Support
+
+Untuk bug reports atau feature requests, buat issue di repository.

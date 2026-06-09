@@ -1,288 +1,184 @@
 const express = require('express');
+const { authenticate, requireAdmin } = require('../middleware/auth');
+
 const router = express.Router();
 
-const authMiddleware = require('../middleware/auth');
-const adminMiddleware = require('../middleware/auth').adminOnly;
-
-// GET /api/servers - Get all servers
-router.get('/', (req, res) => {
-  try {
-    const servers = req.app.get('db').getAllServers();
-    const serverManager = req.app.get('serverManager');
-    
-    // Get detailed status for each server
-    const serversWithStatus = servers.map(server => {
-      return serverManager.getServerStatus(server.id) || server;
-    });
-
-    res.json({
-      success: true,
-      servers: serversWithStatus
-    });
-  } catch (error) {
-    console.error('Error fetching servers:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
-  }
+// Get all servers
+router.get('/', authenticate, (req, res) => {
+  const db = req.app.get('db');
+  const servers = db.getServers();
+  res.json({ success: true, servers });
 });
 
-// GET /api/servers/:id - Get single server
-router.get('/:id', (req, res) => {
+// Get server by ID
+router.get('/:id', authenticate, (req, res) => {
+  const db = req.app.get('db');
+  const serverManager = req.app.get('serverManager');
+  
+  const server = db.getServerById(req.params.id);
+  if (!server) {
+    return res.status(404).json({ success: false, error: 'Server not found' });
+  }
+
+  const status = serverManager.getServerStatus(req.params.id);
+  res.json({ success: true, server: status });
+});
+
+// Create server (admin only)
+router.post('/', authenticate, requireAdmin, (req, res) => {
+  const db = req.app.get('db');
+  const { name, host, port, maxPlayers, placeFile, rfdPath } = req.body;
+
+  if (!name || !host || !port) {
+    return res.status(400).json({ success: false, error: 'Name, host, and port are required' });
+  }
+
+  // Check if port is already in use
+  const existing = db.getServerByPort(port);
+  if (existing) {
+    return res.status(400).json({ success: false, error: 'Port already in use' });
+  }
+
+  const serverId = db.createServer({ name, host, port, maxPlayers, placeFile, rfdPath });
+  db.createAuditLog(req.user.id, 'server-create', `Created server ${name} on port ${port}`, req.ip);
+
+  res.status(201).json({ success: true, serverId });
+});
+
+// Update server (admin only)
+router.put('/:id', authenticate, requireAdmin, (req, res) => {
+  const db = req.app.get('db');
+  const server = db.getServerById(req.params.id);
+  
+  if (!server) {
+    return res.status(404).json({ success: false, error: 'Server not found' });
+  }
+
+  const { name, maxPlayers, placeFile, rfdPath } = req.body;
+  
+  if (name) db.db.prepare('UPDATE servers SET name = ? WHERE id = ?').run(name, req.params.id);
+  if (maxPlayers) db.db.prepare('UPDATE servers SET maxPlayers = ? WHERE id = ?').run(maxPlayers, req.params.id);
+  if (placeFile !== undefined) db.db.prepare('UPDATE servers SET placeFile = ? WHERE id = ?').run(placeFile, req.params.id);
+  if (rfdPath !== undefined) db.db.prepare('UPDATE servers SET rfdPath = ? WHERE id = ?').run(rfdPath, req.params.id);
+
+  db.createAuditLog(req.user.id, 'server-update', `Updated server ${req.params.id}`, req.ip);
+  
+  const updated = db.getServerById(req.params.id);
+  res.json({ success: true, server: updated });
+});
+
+// Delete server (admin only)
+router.delete('/:id', authenticate, requireAdmin, (req, res) => {
+  const db = req.app.get('db');
+  const serverManager = req.app.get('serverManager');
+  
+  const server = db.getServerById(req.params.id);
+  if (!server) {
+    return res.status(404).json({ success: false, error: 'Server not found' });
+  }
+
+  // Stop server if running
+  if (server.status === 'running') {
+    serverManager.stopServer(req.params.id);
+  }
+
+  db.deleteServer(req.params.id);
+  db.createAuditLog(req.user.id, 'server-delete', `Deleted server ${server.name}`, req.ip);
+
+  res.json({ success: true, message: 'Server deleted' });
+});
+
+// Start server (admin only)
+router.post('/:id/start', authenticate, requireAdmin, async (req, res) => {
   try {
-    const server = req.app.get('db').getServerById(req.params.id);
+    const db = req.app.get('db');
+    const serverManager = req.app.get('serverManager');
     
+    const server = db.getServerById(req.params.id);
     if (!server) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Server not found' 
-      });
+      return res.status(404).json({ success: false, error: 'Server not found' });
     }
 
-    const serverManager = req.app.get('serverManager');
-    const detailedServer = serverManager.getServerStatus(server.id);
-
-    res.json({
-      success: true,
-      server: detailedServer
-    });
+    const result = await serverManager.startServer(req.params.id, req.body);
+    
+    if (result.success) {
+      db.createAuditLog(req.user.id, 'server-start', `Started server ${server.name}`, req.ip);
+      res.json({ success: true, message: 'Server started', pid: result.pid });
+    } else {
+      res.status(500).json({ success: false, error: result.error || 'Failed to start server' });
+    }
   } catch (error) {
-    console.error('Error fetching server:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
+    console.error('Start server error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// GET /api/servers/game/:gameId - Get servers for a specific game
-router.get('/game/:gameId', (req, res) => {
+// Stop server (admin only)
+router.post('/:id/stop', authenticate, requireAdmin, (req, res) => {
+  const db = req.app.get('db');
+  const serverManager = req.app.get('serverManager');
+  
+  const server = db.getServerById(req.params.id);
+  if (!server) {
+    return res.status(404).json({ success: false, error: 'Server not found' });
+  }
+
+  serverManager.stopServer(req.params.id);
+  db.createAuditLog(req.user.id, 'server-stop', `Stopped server ${server.name}`, req.ip);
+
+  res.json({ success: true, message: 'Server stopped' });
+});
+
+// Restart server (admin only)
+router.post('/:id/restart', authenticate, requireAdmin, async (req, res) => {
   try {
-    const servers = req.app.get('db').getServersByGameId(req.params.gameId);
+    const db = req.app.get('db');
     const serverManager = req.app.get('serverManager');
     
-    const serversWithStatus = servers.map(server => {
-      return serverManager.getServerStatus(server.id) || server;
-    });
-
-    res.json({
-      success: true,
-      servers: serversWithStatus
-    });
-  } catch (error) {
-    console.error('Error fetching game servers:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
-  }
-});
-
-// POST /api/servers - Create new server (admin only)
-router.post('/', authMiddleware, adminMiddleware, (req, res) => {
-  try {
-    const { game_id, port } = req.body;
-
-    if (!game_id) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Game ID is required' 
-      });
-    }
-
-    // Verify game exists
-    const game = req.app.get('db').getGameById(game_id);
-    if (!game) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Game not found' 
-      });
-    }
-
-    // Get available port
-    const serverManager = req.app.get('serverManager');
-    const availablePort = port || serverManager.getAvailablePort(game.default_port || 2000);
-
-    const result = req.app.get('db').createServer({
-      game_id,
-      port: availablePort
-    });
-
-    res.status(201).json({
-      success: true,
-      server: {
-        id: result.id,
-        game_id,
-        port: availablePort,
-        status: 'stopped'
-      }
-    });
-  } catch (error) {
-    console.error('Error creating server:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
-  }
-});
-
-// POST /api/servers/start/:id - Start server (admin only)
-router.post('/start/:id', authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const serverId = parseInt(req.params.id);
-    const server = req.app.get('db').getServerById(serverId);
-    
+    const server = db.getServerById(req.params.id);
     if (!server) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Server not found' 
-      });
+      return res.status(404).json({ success: false, error: 'Server not found' });
     }
 
-    if (server.status === 'running') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Server is already running' 
-      });
+    const result = await serverManager.restartServer(req.params.id, req.body);
+    
+    if (result.success) {
+      db.createAuditLog(req.user.id, 'server-restart', `Restarted server ${server.name}`, req.ip);
+      res.json({ success: true, message: 'Server restarted', pid: result.pid });
+    } else {
+      res.status(500).json({ success: false, error: result.error || 'Failed to restart server' });
     }
-
-    const serverManager = req.app.get('serverManager');
-    const result = await serverManager.startServer(serverId, server.game_id);
-
-    if (!result.success) {
-      return res.status(500).json({ 
-        success: false, 
-        error: result.error 
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Server started successfully',
-      pid: result.pid,
-      port: result.port
-    });
   } catch (error) {
-    console.error('Error starting server:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
+    console.error('Restart server error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// POST /api/servers/stop/:id - Stop server (admin only)
-router.post('/stop/:id', authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const serverId = parseInt(req.params.id);
-    const server = req.app.get('db').getServerById(serverId);
-    
-    if (!server) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Server not found' 
-      });
-    }
+// Scan ports
+router.get('/scan/ports', authenticate, async (req, res) => {
+  const serverManager = req.app.get('serverManager');
+  const host = req.query.host || '127.0.0.1';
+  const customPorts = req.query.ports ? req.query.ports.split(',').map(Number) : null;
+  const ports = customPorts || serverManager.scanPorts;
 
-    if (server.status !== 'running') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Server is not running' 
-      });
-    }
-
-    const serverManager = req.app.get('serverManager');
-    const result = await serverManager.stopServer(serverId);
-
-    if (!result.success) {
-      return res.status(500).json({ 
-        success: false, 
-        error: result.error 
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Server stopped successfully'
-    });
-  } catch (error) {
-    console.error('Error stopping server:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
-  }
+  const results = await serverManager.scanPorts(host, ports);
+  res.json({ success: true, results });
 });
 
-// POST /api/servers/restart/:id - Restart server (admin only)
-router.post('/restart/:id', authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const serverId = parseInt(req.params.id);
-    const server = req.app.get('db').getServerById(serverId);
-    
-    if (!server) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Server not found' 
-      });
-    }
-
-    const serverManager = req.app.get('serverManager');
-    const result = await serverManager.restartServer(serverId);
-
-    if (!result.success) {
-      return res.status(500).json({ 
-        success: false, 
-        error: result.error 
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Server restarted successfully'
-    });
-  } catch (error) {
-    console.error('Error restarting server:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
-  }
+// Health check
+router.get('/:id/health', authenticate, async (req, res) => {
+  const serverManager = req.app.get('serverManager');
+  const health = await serverManager.healthCheck(req.params.id);
+  res.json({ success: true, health });
 });
 
-// DELETE /api/servers/:id - Delete server (admin only)
-router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const serverId = parseInt(req.params.id);
-    const server = req.app.get('db').getServerById(serverId);
-    
-    if (!server) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Server not found' 
-      });
-    }
-
-    // Stop server if running
-    if (server.status === 'running') {
-      const serverManager = req.app.get('serverManager');
-      await serverManager.stopServer(serverId);
-    }
-
-    req.app.get('db').deleteServer(serverId);
-    
-    res.json({
-      success: true,
-      message: 'Server deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting server:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
-  }
+// Get server logs (admin only)
+router.get('/:id/logs', authenticate, requireAdmin, (req, res) => {
+  const db = req.app.get('db');
+  const logs = db.getAuditLogs(100).filter(log => 
+    log.action === 'server-log' && log.details.includes(req.params.id)
+  );
+  res.json({ success: true, logs });
 });
 
 module.exports = router;
