@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # RFD Platform - Main Application
+  rfds-platform:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rfds-platform
+    ports:
+      - "3000:3000"   # Frontend (Next.js)
+      - "3001:3001"   # Backend API
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - API_PORT=3001
+      - JWT_SECRET=${JWT_SECRET:-rfds_secret_key_change_in_production_2024}
+      - JWT_EXPIRES_IN=7d
+      - RFD_PATH=/app/RFD.exe
+      - GAMES_DIR=/app/games
+      - THUMBNAILS_DIR=/app/thumbnails
+      - FRONTEND_URL=http://localhost:3000
+    volumes:
+      # Persist database
+      - rfds-data:/app/data
+      # Persist games
+      - rfds-games:/app/games
+      # Persist thumbnails
+      - rfds-thumbnails:/app/thumbnails
+      # RFD executable
+      - ${RFD_EXECUTABLE_PATH:-./RFD.exe}:/app/RFD.exe:ro
+      # Logs for debugging
+      - rfds-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - rfds-network
+
+  # Optional: Redis for session management (future use)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: rfds-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - rfds-network
+
+volumes:
+  rfds-data:
+    driver: local
+  rfds-games:
+    driver: local
+  rfds-thumbnails:
+    driver: local
+  rfds-logs:
+    driver: local
+
+networks:
+  rfds-network:
+    driver: bridge
