@@ -1,0 +1,197 @@
+/* RFD Custom Styles */
+:root {
+  --rfd-primary: #0ea5e9;
+  --rfd-dark: #0c4a6e;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #1f2937;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Status indicators */
+.status-online {
+  @apply bg-green-500;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+}
+
+.status-offline {
+  @apply bg-gray-500;
+}
+
+.status-running {
+  @apply bg-green-500;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+}
+
+/* Console output */
+.console-line {
+  @apply py-0.5 font-mono text-sm;
+}
+
+.console-line.info {
+  @apply text-gray-300;
+}
+
+.console-line.error {
+  @apply text-red-400;
+}
+
+.console-line.success {
+  @apply text-green-400;
+}
+
+.console-line.warning {
+  @apply text-yellow-400;
+}
+
+/* Table styles */
+table {
+  @apply w-full;
+}
+
+th {
+  @apply font-medium text-gray-300;
+}
+
+td {
+  @apply text-gray-400;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply bg-rfd-600 hover:bg-rfd-700 text-white px-4 py-2 rounded font-medium transition;
+}
+
+.btn-secondary {
+  @apply bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded font-medium transition;
+}
+
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-medium transition;
+}
+
+/* Input focus styles */
+input:focus, select:focus, textarea:focus {
+  @apply outline-none ring-2 ring-rfd-500/50;
+}
+
+/* Nav button active state */
+.nav-btn.active {
+  @apply bg-gray-700 text-rfd-400;
+}
+
+/* Toast animations */
+.toast-show {
+  @apply translate-y-0 opacity-100;
+}
+
+.toast-hide {
+  @apply translate-y-full opacity-0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stat-card {
+    @apply p-3;
+  }
+  
+  .stat-card .text-3xl {
+    @apply text-2xl;
+  }
+}
+
+/* Loading spinner */
+.spinner {
+  border: 3px solid #374151;
+  border-top-color: var(--rfd-primary);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Card hover effects */
+.card-hover {
+  @apply transition-all duration-200;
+}
+
+.card-hover:hover {
+  @apply border-rfd-500/50 shadow-lg shadow-rfd-500/10;
+}
+
+/* Badge styles */
+.badge {
+  @apply px-2 py-0.5 rounded text-xs font-medium;
+}
+
+.badge-success {
+  @apply bg-green-500/20 text-green-400;
+}
+
+.badge-warning {
+  @apply bg-yellow-500/20 text-yellow-400;
+}
+
+.badge-danger {
+  @apply bg-red-500/20 text-red-400;
+}
+
+.badge-info {
+  @apply bg-blue-500/20 text-blue-400;
+}
+
+/* Modal backdrop blur */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+}

@@ -1,0 +1,48 @@
+version: '3.8'
+
+# Development docker-compose for hot-reload development
+services:
+  rfds-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: rfds-backend-dev
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - JWT_SECRET=dev_secret_do_not_use_in_production
+      - GAMES_DIR=/app/uploads/games
+      - THUMBNAILS_DIR=/app/uploads/thumbnails
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/uploads:/app/uploads
+      - ./backend/data:/app/data
+    command: npm run dev
+    networks:
+      - rfds-dev
+
+  rfds-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: rfds-frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - NEXT_PUBLIC_SOCKET_URL=http://localhost:3001
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    depends_on:
+      - rfds-backend
+    command: npm run dev
+    networks:
+      - rfds-dev
+
+networks:
+  rfds-dev:
+    driver: bridge
