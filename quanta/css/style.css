@@ -426,7 +426,7 @@ body {
     color: white;
 }
 
-/* Login Page - Roblox 2021 Style */
+/* Roblox 2021 Exact Login Styles */
 .login-container {
     display: flex;
     justify-content: center;
@@ -435,12 +435,17 @@ body {
     min-height: calc(100vh - 80px);
 }
 
+.login-container.ng-scope {
+    display: block;
+}
+
 #login-base {
     width: 100%;
     max-width: 324px;
+    margin: 0 auto;
 }
 
-.login-section {
+.section-content.login-section {
     background: #fff;
     border-radius: 8px;
     padding: 24px;
@@ -448,7 +453,7 @@ body {
 }
 
 .login-header {
-    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Gotham Medium', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 22px;
     font-weight: 700;
     color: #191919;
@@ -456,7 +461,15 @@ body {
     text-align: center;
 }
 
+.login-header.ng-binding {
+    margin-bottom: 20px;
+}
+
 .login-form-container {
+    width: 100%;
+}
+
+.login-form {
     width: 100%;
 }
 
@@ -464,7 +477,12 @@ body {
     margin-bottom: 14px;
 }
 
-.login-form input {
+.login-form .form-group.username-form-group,
+.login-form .form-group.password-form-group {
+    margin-bottom: 14px;
+}
+
+.login-form input.form-control.input-field {
     width: 100%;
     height: 44px;
     padding: 0 12px;
@@ -479,21 +497,16 @@ body {
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.login-form input:focus {
+.login-form input.form-control.input-field:focus {
     border-color: #00a2ff;
     box-shadow: 0 0 0 3px rgba(0,162,255,0.2);
 }
 
-.login-form input::placeholder {
+.login-form input.form-control.input-field::placeholder {
     color: #a3a3a3;
 }
 
-.username-form-group,
-.password-form-group {
-    position: relative;
-}
-
-.form-control-label {
+.form-control-label.xsmall.text-error.login-error {
     display: block;
     font-size: 12px;
     color: #e34444;
@@ -501,7 +514,11 @@ body {
     font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.login-button {
+.form-control-label.xsmall.text-error.login-error.ng-binding {
+    min-height: 14px;
+}
+
+.btn-full-width.login-button {
     width: 100%;
     height: 44px;
     background: #00a2ff;
@@ -510,34 +527,49 @@ body {
     color: #fff;
     font-size: 15px;
     font-weight: 600;
-    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Gotham Medium', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     cursor: pointer;
     transition: background-color 0.2s;
     margin-top: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.login-button:hover {
+.btn-full-width.login-button:hover {
     background: #0085d4;
 }
 
-.login-button:active {
+.btn-full-width.login-button:active {
     background: #0077c0;
 }
 
-.forgot-credentials-link {
+.btn-full-width.login-button.ng-binding {
+    background: #00a2ff;
+}
+
+.btn-full-width.login-button.btn-primary-md {
+    background: #00a2ff;
+}
+
+.btn-full-width.login-button.btn-secondary-md {
+    background: #c3c3c3;
+}
+
+.text-center.forgot-credentials-link {
     text-align: center;
     margin-top: 16px;
 }
 
-.forgot-credentials-link .text-link {
+.text-center.forgot-credentials-link .text-link {
     color: #00a2ff;
     text-decoration: none;
     font-size: 13px;
     font-weight: 500;
-    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Gotham Medium', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.forgot-credentials-link .text-link:hover {
+.text-center.forgot-credentials-link .text-link:hover {
     text-decoration: underline;
 }
 
@@ -548,7 +580,7 @@ body {
     text-align: center;
 }
 
-.rbx-divider {
+.rbx-divider.fb-divider {
     height: 1px;
     background: #e3e3e3;
     margin: 8px 0;
@@ -558,51 +590,66 @@ body {
     position: relative;
 }
 
-.divider-text {
+.divider-text.xsmall {
     display: inline-block;
     background: #fff;
     padding: 0 10px;
     color: #6c6c6c;
     font-size: 12px;
+    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     position: relative;
     top: -8px;
+    text-transform: lowercase;
+}
+
+.divider-text.xsmall.ng-binding {
+    text-transform: lowercase;
 }
 
 /* Social Buttons */
-.cross-device-login-button,
-.fb-button {
+.btn-full-width.btn-control-md.cross-device-login-button {
     width: 100%;
     height: 40px;
     border-radius: 4px;
     font-size: 14px;
-    font-weight: 600;
-    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 500;
+    font-family: 'Gotham Medium', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     cursor: pointer;
     transition: background-color 0.2s, border-color 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 10px;
-}
-
-.cross-device-login-button {
     background: #fff;
     border: 1px solid #c9c9c9;
     color: #191919;
 }
 
-.cross-device-login-button:hover {
+.btn-full-width.btn-control-md.cross-device-login-button:hover {
     background: #f0f0f0;
 }
 
-.fb-button {
+.btn-full-width.btn-control-md.fb-button.social-login {
+    width: 100%;
+    height: 40px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Gotham Medium', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0;
     background: #1877f2;
     border: 1px solid #1877f2;
     color: #fff;
 }
 
-.fb-button:hover {
+.btn-full-width.btn-control-md.fb-button.social-login:hover {
     background: #166fe5;
+    border-color: #166fe5;
 }
 
 .fb-icon {
@@ -613,69 +660,23 @@ body {
     margin-right: 8px;
     display: inline-block;
     position: relative;
+    flex-shrink: 0;
 }
 
 .fb-icon::before {
-    content: 'f';
+    content: '';
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    color: #1877f2;
-    font-weight: 700;
-    font-size: 11px;
-}
-
-/* Captcha Container */
-.captcha-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,0,0,0.6);
-}
-
-.captcha-container .modal {
-    position: relative;
-    background: #fff;
-    border-radius: 8px;
-    padding: 20px;
-    max-width: 400px;
-    width: 90%;
-}
-
-.captcha-container .modal-body {
-    position: relative;
-}
-
-.captcha-container .close {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #fff;
-    border: 1px solid #e3e3e3;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    color: #6c6c6c;
-}
-
-.captcha-container .close:hover {
-    background: #f0f0f0;
+    width: 10px;
+    height: 16px;
+    background: #1877f2;
+    clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%, 25% 50%);
 }
 
 /* Spinner */
-.spinner-sm {
+.spinner.spinner-sm.spinner-no-margin.spinner-block {
     width: 20px;
     height: 20px;
     border: 2px solid #e3e3e3;
@@ -685,8 +686,8 @@ body {
     margin: 10px auto;
 }
 
-.spinner-no-margin {
-    margin: 0;
+.spinner.spinner-sm.spinner-no-margin.spinner-block[style*="display: none"] {
+    display: none;
 }
 
 /* System Feedback */
@@ -707,23 +708,118 @@ body {
     border: 1px solid #ffeeba;
 }
 
-/* Signup Link */
-.signup-link {
-    text-align: center;
-    margin-top: 20px;
-    font-size: 13px;
+.alert-content.ng-binding.ng-scope {
+    display: block;
+}
+
+/* Captcha Container */
+.captcha-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.6);
+}
+
+.captcha-container.show {
+    display: flex;
+}
+
+.captcha-container .modal {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 400px;
+    width: 90%;
+}
+
+.captcha-container .modal-dialog {
+    max-width: none;
+}
+
+.captcha-container .modal-content {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.captcha-container .modal-body {
+    position: relative;
+    padding: 0;
+}
+
+.captcha-container .modal-body .close {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #e3e3e3;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
     color: #6c6c6c;
-    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    z-index: 10;
 }
 
-.signup-link a {
-    color: #00a2ff;
-    text-decoration: none;
-    font-weight: 500;
+.captcha-container .modal-body .close:hover {
+    background: #f0f0f0;
 }
 
-.signup-link a:hover {
-    text-decoration: underline;
+.captchav2-funcaptcha-modal-body {
+    min-height: 200px;
+}
+
+/* Toggle Loading */
+[toggle-loading] {
+    display: block;
+}
+
+/* Animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Font Classes */
+.gotham-font {
+    font-family: 'Gotham Medium', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Light Theme */
+.light-theme {
+    background: #fff;
+}
+
+/* Roblox specific body class */
+.rbx-body {
+    background: #f3f3f3;
+}
+
+/* Footer styles */
+.text-footer.footer-note {
+    color: #6c6c6c;
+    font-size: 12px;
+}
+
+/* ng-binding classes */
+.ng-binding {
+    display: inline;
+}
+
+/* ng-isolate-scope */
+.ng-isolate-scope {
+    display: block;
 }
 
 /* Footer */

@@ -337,65 +337,95 @@ function renderCreatorCard(name, followers, games) {
     `;
 }
 
-// Render Login Page - Roblox 2021 Style
+// Render Login Page - Roblox 2021 Exact Style
 function renderLoginPage(container) {
     container.innerHTML = `
-        <div id="login-container" class="login-container">
+        <div id="login-container" class="login-container ng-scope">
             <div id="login-base">
                 <div class="section-content login-section">
-                    <h2 class="login-header">Login to QUANTA</h2>
+                    <h2 class="login-header ng-binding">Login to QUANTA</h2>
                     
                     <div class="login-form-container">
-                        <div class="sg-system-feedback">
-                            <div class="alert-system-feedback">
-                                <div class="alert"></div>
+                        <form class="login-form ng-valid ng-dirty ng-valid-parse" role="form" name="loginForm" id="login-form" onsubmit="handleLogin(event)">
+                            <div class="sg-system-feedback">
+                                <div class="alert-system-feedback">
+                                    <div class="alert"></div>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <form class="login-form" id="login-form" onsubmit="handleLogin(event)">
+                            
                             <div class="form-group username-form-group">
-                                <input type="text" id="login-username" class="form-control input-field" placeholder="Username/Email/Phone" required autocomplete="username">
+                                <input id="login-username" name="username" type="text" class="form-control input-field ng-valid ng-dirty ng-valid-parse ng-touched ng-empty" placeholder="Username/Email/Phone" required autocomplete="username">
                             </div>
+                            
                             <div class="form-group password-form-group">
-                                <input type="password" id="login-password" class="form-control input-field" placeholder="Password" required autocomplete="current-password">
-                                <p class="form-control-label xsmall text-error login-error" id="login-error"></p>
+                                <input id="login-password" name="password" type="password" class="form-control input-field ng-valid ng-dirty ng-valid-parse ng-touched ng-empty" placeholder="Password" required autocomplete="current-password">
+                                <p class="form-control-label xsmall text-error login-error ng-binding" id="login-error"></p>
                             </div>
-                            <div class="form-group">
-                                <button type="submit" class="login-button" id="login-button">
-                                    <span>Log In</span>
+                            
+                            <div class="toggle-loading" is-loading="loginLayout.isProcessing">
+                                <button id="login-button" class="btn-full-width login-button ng-binding btn-secondary-md">
+                                    Log In
                                 </button>
                             </div>
-                            <div class="spinner spinner-sm spinner-no-margin" id="login-spinner" style="display: none;"></div>
                             
-                            <div class="forgot-credentials-link">
-                                <a href="#" class="text-link">Forgot Password or Username?</a>
+                            <div class="spinner spinner-sm spinner-no-margin spinner-block" id="login-spinner" style="display: none;"></div>
+                            
+                            <div class="text-center forgot-credentials-link">
+                                <a id="forgot-credentials-link" class="text-link ng-binding" href="#" onclick="event.preventDefault(); showToast('Password recovery coming soon!')">
+                                    Forgot Password or Username?
+                                </a>
                             </div>
                         </form>
                         
                         <div class="fb-divider-container">
                             <div class="rbx-divider fb-divider"></div>
                             <div class="divider-text-container">
-                                <span class="divider-text xsmall">login with your</span>
+                                <span class="divider-text xsmall ng-binding">login with your</span>
                             </div>
                         </div>
                         
-                        <button class="cross-device-login-button" onclick="showToast('Quick Log In feature coming soon!')">
-                            <span>Quick Log In</span>
+                        <button id="cross-device-login-button" class="btn-full-width btn-control-md cross-device-login-button" onclick="showToast('Quick Log In - Open QUANTA mobile app!');">
+                            <span class="ng-binding">Quick Log In</span>
                         </button>
                         
-                        <button class="fb-button social-login" onclick="showToast('Facebook login coming soon!')">
+                        <button id="facebook-login-button" class="btn-full-width btn-control-md fb-button social-login" data-rbx-provider="facebook" onclick="showToast('Facebook login coming soon!');">
                             <span class="fb-icon"></span>
-                            <span>Facebook</span>
+                            <span class="ng-binding">Facebook</span>
                         </button>
                     </div>
-                    
-                    <div class="signup-link" style="margin-top: 20px; text-align: center; font-size: 13px; color: #6c6c6c;">
-                        Don't have an account? <a href="#signup">Sign up</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Captcha Container (hidden by default) -->
+        <div class="captcha-container" id="captcha-container">
+            <div class="modal" onclick="hideCaptcha()">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-body" onclick="event.stopPropagation()">
+                            <button type="button" class="close" onclick="hideCaptcha()">
+                                <span aria-hidden="true"><span class="icon-close"></span></span>
+                                <span class="sr-only">Close</span>
+                            </button>
+                            <div id="captchaV2-1" class="captchav2-funcaptcha-modal-body">
+                                <p style="text-align: center; padding: 60px 20px; color: #6c6c6c;">
+                                    Captcha verification would appear here
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     `;
+}
+
+// Hide Captcha
+function hideCaptcha() {
+    const captcha = document.getElementById('captcha-container');
+    if (captcha) {
+        captcha.classList.remove('show');
+    }
 }
 
 // Render Signup Page
@@ -622,7 +652,9 @@ function handleLogin(event) {
     // Show loading state
     if (loginButton) {
         loginButton.disabled = true;
-        loginButton.innerHTML = '<span>Logging in...</span>';
+        loginButton.classList.add('btn-primary-md');
+        loginButton.classList.remove('btn-secondary-md');
+        loginButton.textContent = 'Logging in...';
     }
     if (spinner) spinner.style.display = 'block';
     
@@ -633,7 +665,9 @@ function handleLogin(event) {
             if (errorEl) errorEl.textContent = 'Please enter your username and password.';
             if (loginButton) {
                 loginButton.disabled = false;
-                loginButton.innerHTML = '<span>Log In</span>';
+                loginButton.classList.remove('btn-primary-md');
+                loginButton.classList.add('btn-secondary-md');
+                loginButton.textContent = 'Log In';
             }
             if (spinner) spinner.style.display = 'none';
             return;
@@ -643,7 +677,9 @@ function handleLogin(event) {
             if (errorEl) errorEl.textContent = 'Password must be at least 6 characters.';
             if (loginButton) {
                 loginButton.disabled = false;
-                loginButton.innerHTML = '<span>Log In</span>';
+                loginButton.classList.remove('btn-primary-md');
+                loginButton.classList.add('btn-secondary-md');
+                loginButton.textContent = 'Log In';
             }
             if (spinner) spinner.style.display = 'none';
             return;
@@ -661,7 +697,9 @@ function handleLogin(event) {
         
         if (loginButton) {
             loginButton.disabled = false;
-            loginButton.innerHTML = '<span>Log In</span>';
+            loginButton.classList.remove('btn-primary-md');
+            loginButton.classList.add('btn-secondary-md');
+            loginButton.textContent = 'Log In';
         }
         if (spinner) spinner.style.display = 'none';
         
