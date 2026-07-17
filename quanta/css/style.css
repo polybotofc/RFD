@@ -426,153 +426,300 @@ body {
     color: white;
 }
 
-/* Login Page */
-.login-page {
+/* Login Page - Roblox 2021 Style */
+.login-container {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
+    padding: 60px 20px;
     min-height: calc(100vh - 80px);
-    padding: 40px 20px;
 }
 
-.login-container {
-    background: var(--bg-primary);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    padding: 48px;
+#login-base {
     width: 100%;
-    max-width: 400px;
+    max-width: 324px;
+}
+
+.login-section {
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .login-header {
+    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #191919;
+    margin-bottom: 20px;
     text-align: center;
-    margin-bottom: 32px;
 }
 
-.login-header h2 {
-    font-size: 28px;
-    font-weight: 900;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-}
-
-.login-header p {
-    color: var(--text-secondary);
-    font-size: 14px;
+.login-form-container {
+    width: 100%;
 }
 
 .login-form .form-group {
-    margin-bottom: 20px;
-}
-
-.login-form label {
-    display: block;
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--text-primary);
-    margin-bottom: 8px;
+    margin-bottom: 14px;
 }
 
 .login-form input {
     width: 100%;
-    padding: 14px 16px;
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius-md);
-    font-size: 15px;
-    transition: all 0.2s ease;
-    font-family: var(--font-family);
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #c9c9c9;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #191919;
+    background: #fff;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .login-form input:focus {
-    outline: none;
-    border-color: var(--primary);
+    border-color: #00a2ff;
+    box-shadow: 0 0 0 3px rgba(0,162,255,0.2);
 }
 
-.btn-login {
-    width: 100%;
-    padding: 14px;
-    background: var(--primary);
-    color: white;
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-top: 10px;
+.login-form input::placeholder {
+    color: #a3a3a3;
 }
 
-.btn-login:hover {
-    background: var(--primary-dark);
-    transform: translateY(-1px);
+.username-form-group,
+.password-form-group {
+    position: relative;
 }
 
-.login-divider {
-    display: flex;
-    align-items: center;
-    margin: 24px 0;
-}
-
-.login-divider::before,
-.login-divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border-color);
-}
-
-.login-divider span {
-    padding: 0 15px;
-    color: var(--text-secondary);
-    font-size: 13px;
-}
-
-.social-login {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    padding: 12px;
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius-md);
-    background: var(--bg-primary);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.social-login:hover {
-    background: var(--bg-secondary);
-    border-color: var(--text-secondary);
-}
-
-.forgot-link {
+.form-control-label {
     display: block;
-    text-align: center;
-    margin-top: 20px;
-    color: var(--primary);
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 12px;
+    color: #e34444;
+    margin-top: 4px;
+    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.forgot-link:hover {
+.login-button {
+    width: 100%;
+    height: 44px;
+    background: #00a2ff;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 4px;
+}
+
+.login-button:hover {
+    background: #0085d4;
+}
+
+.login-button:active {
+    background: #0077c0;
+}
+
+.forgot-credentials-link {
+    text-align: center;
+    margin-top: 16px;
+}
+
+.forgot-credentials-link .text-link {
+    color: #00a2ff;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.forgot-credentials-link .text-link:hover {
     text-decoration: underline;
 }
 
+/* Divider */
+.fb-divider-container {
+    position: relative;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.rbx-divider {
+    height: 1px;
+    background: #e3e3e3;
+    margin: 8px 0;
+}
+
+.divider-text-container {
+    position: relative;
+}
+
+.divider-text {
+    display: inline-block;
+    background: #fff;
+    padding: 0 10px;
+    color: #6c6c6c;
+    font-size: 12px;
+    position: relative;
+    top: -8px;
+}
+
+/* Social Buttons */
+.cross-device-login-button,
+.fb-button {
+    width: 100%;
+    height: 40px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.cross-device-login-button {
+    background: #fff;
+    border: 1px solid #c9c9c9;
+    color: #191919;
+}
+
+.cross-device-login-button:hover {
+    background: #f0f0f0;
+}
+
+.fb-button {
+    background: #1877f2;
+    border: 1px solid #1877f2;
+    color: #fff;
+}
+
+.fb-button:hover {
+    background: #166fe5;
+}
+
+.fb-icon {
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 2px;
+    margin-right: 8px;
+    display: inline-block;
+    position: relative;
+}
+
+.fb-icon::before {
+    content: 'f';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #1877f2;
+    font-weight: 700;
+    font-size: 11px;
+}
+
+/* Captcha Container */
+.captcha-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.6);
+}
+
+.captcha-container .modal {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 400px;
+    width: 90%;
+}
+
+.captcha-container .modal-body {
+    position: relative;
+}
+
+.captcha-container .close {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #e3e3e3;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #6c6c6c;
+}
+
+.captcha-container .close:hover {
+    background: #f0f0f0;
+}
+
+/* Spinner */
+.spinner-sm {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e3e3e3;
+    border-top-color: #00a2ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 10px auto;
+}
+
+.spinner-no-margin {
+    margin: 0;
+}
+
+/* System Feedback */
+.sg-system-feedback {
+    margin-bottom: 16px;
+}
+
+.alert-system-feedback .alert {
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.alert-system-feedback .alert.on {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* Signup Link */
 .signup-link {
     text-align: center;
-    margin-top: 24px;
-    color: var(--text-secondary);
-    font-size: 14px;
+    margin-top: 20px;
+    font-size: 13px;
+    color: #6c6c6c;
+    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .signup-link a {
-    color: var(--primary);
-    font-weight: 600;
+    color: #00a2ff;
     text-decoration: none;
+    font-weight: 500;
 }
 
 .signup-link a:hover {

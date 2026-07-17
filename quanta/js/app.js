@@ -337,33 +337,61 @@ function renderCreatorCard(name, followers, games) {
     `;
 }
 
-// Render Login Page
+// Render Login Page - Roblox 2021 Style
 function renderLoginPage(container) {
     container.innerHTML = `
-        <div class="login-page">
-            <div class="login-container">
-                <div class="login-header">
-                    <div class="icon-logo" style="width: 60px; height: 60px; font-size: 30px; margin: 0 auto 20px;">Q</div>
-                    <h2>Welcome Back</h2>
-                    <p>Login to your QUANTA account</p>
-                </div>
-                
-                <form class="login-form" id="login-form" onsubmit="handleLogin(event)">
-                    <div class="form-group">
-                        <label>Username, Email, or Phone</label>
-                        <input type="text" id="login-username" placeholder="Enter your username" required>
+        <div id="login-container" class="login-container">
+            <div id="login-base">
+                <div class="section-content login-section">
+                    <h2 class="login-header">Login to QUANTA</h2>
+                    
+                    <div class="login-form-container">
+                        <div class="sg-system-feedback">
+                            <div class="alert-system-feedback">
+                                <div class="alert"></div>
+                            </div>
+                        </div>
+                        
+                        <form class="login-form" id="login-form" onsubmit="handleLogin(event)">
+                            <div class="form-group username-form-group">
+                                <input type="text" id="login-username" class="form-control input-field" placeholder="Username/Email/Phone" required autocomplete="username">
+                            </div>
+                            <div class="form-group password-form-group">
+                                <input type="password" id="login-password" class="form-control input-field" placeholder="Password" required autocomplete="current-password">
+                                <p class="form-control-label xsmall text-error login-error" id="login-error"></p>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="login-button" id="login-button">
+                                    <span>Log In</span>
+                                </button>
+                            </div>
+                            <div class="spinner spinner-sm spinner-no-margin" id="login-spinner" style="display: none;"></div>
+                            
+                            <div class="forgot-credentials-link">
+                                <a href="#" class="text-link">Forgot Password or Username?</a>
+                            </div>
+                        </form>
+                        
+                        <div class="fb-divider-container">
+                            <div class="rbx-divider fb-divider"></div>
+                            <div class="divider-text-container">
+                                <span class="divider-text xsmall">login with your</span>
+                            </div>
+                        </div>
+                        
+                        <button class="cross-device-login-button" onclick="showToast('Quick Log In feature coming soon!')">
+                            <span>Quick Log In</span>
+                        </button>
+                        
+                        <button class="fb-button social-login" onclick="showToast('Facebook login coming soon!')">
+                            <span class="fb-icon"></span>
+                            <span>Facebook</span>
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="login-password" placeholder="Enter your password" required>
+                    
+                    <div class="signup-link" style="margin-top: 20px; text-align: center; font-size: 13px; color: #6c6c6c;">
+                        Don't have an account? <a href="#signup">Sign up</a>
                     </div>
-                    <button type="submit" class="btn-login">Log In</button>
-                </form>
-                
-                <a href="#" class="forgot-link">Forgot Password or Username?</a>
-                
-                <div class="signup-link">
-                    Don't have an account? <a href="#signup">Sign up</a>
                 </div>
             </div>
         </div>
@@ -584,20 +612,63 @@ function handleLogin(event) {
     event.preventDefault();
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
+    const loginButton = document.getElementById('login-button');
+    const spinner = document.getElementById('login-spinner');
+    const errorEl = document.getElementById('login-error');
     
-    // Simulate login
-    QuantaApp.user = {
-        username: username,
-        robux: 1500,
-        email: `${username}@quanta.com`
-    };
-    QuantaApp.isLoggedIn = true;
+    // Clear previous error
+    if (errorEl) errorEl.textContent = '';
     
-    localStorage.setItem('quanta_user', JSON.stringify(QuantaApp.user));
+    // Show loading state
+    if (loginButton) {
+        loginButton.disabled = true;
+        loginButton.innerHTML = '<span>Logging in...</span>';
+    }
+    if (spinner) spinner.style.display = 'block';
     
-    showToast('Login successful!');
-    renderNavigation();
-    loadPage('home');
+    // Simulate login with delay
+    setTimeout(() => {
+        // Basic validation
+        if (!username || !password) {
+            if (errorEl) errorEl.textContent = 'Please enter your username and password.';
+            if (loginButton) {
+                loginButton.disabled = false;
+                loginButton.innerHTML = '<span>Log In</span>';
+            }
+            if (spinner) spinner.style.display = 'none';
+            return;
+        }
+        
+        if (password.length < 6) {
+            if (errorEl) errorEl.textContent = 'Password must be at least 6 characters.';
+            if (loginButton) {
+                loginButton.disabled = false;
+                loginButton.innerHTML = '<span>Log In</span>';
+            }
+            if (spinner) spinner.style.display = 'none';
+            return;
+        }
+        
+        // Simulate successful login
+        QuantaApp.user = {
+            username: username,
+            robux: 1500,
+            email: `${username}@quanta.com`
+        };
+        QuantaApp.isLoggedIn = true;
+        
+        localStorage.setItem('quanta_user', JSON.stringify(QuantaApp.user));
+        
+        if (loginButton) {
+            loginButton.disabled = false;
+            loginButton.innerHTML = '<span>Log In</span>';
+        }
+        if (spinner) spinner.style.display = 'none';
+        
+        showToast('Login successful!');
+        renderNavigation();
+        loadPage('home');
+    }, 1500);
 }
 
 // Handle Signup
